@@ -103,7 +103,7 @@ app.post('/roast', async (req, res) => {
         
 
         // Buat prompt untuk Gemini AI
-        var prompt = `berikan roasting singkat dengan kejam dan menyindir dalam bahasa gaul untuk profile github berikut : ${username}. Berikut detailnya: "${JSON.stringify(datas)}"`;
+        var prompt = `berikan roasting singkat dengan kejam,menyindir, serta menyakitkan dalam bahasa gaul untuk profile github berikut : ${username}. Berikut detailnya: "${JSON.stringify(datas)}"`;
         
         // pakai bahasa inggris kalau lokasinya bukan di indonesia
         if (profileResponse.data != null && profileResponse.data.location != null && !profileResponse.data.location.includes('Indonesia')) {
@@ -117,9 +117,9 @@ app.post('/roast', async (req, res) => {
 
         //pastikan response selalu konsisten
         if (profileResponse.data.location == null || profileResponse.data.location.includes('Indonesia')) {
-            prompt += `. (berikan response dalam bahasa indonesia dan jangan berikan pujian atau saran serta jangan berikan kata-kata terlalu kasar)`
+            prompt += `. (berikan response dalam bahasa indonesia dan jangan berikan pujian atau saran)`
         } else {
-            prompt += `. (provide the response in English and do not provide praise or advice and do not use explicit words)`
+            prompt += `. (provide the response in English and do not provide praise or advice)`
         }
 
         //kalau username gak ketemu
