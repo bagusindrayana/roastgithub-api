@@ -119,14 +119,21 @@ app.post('/roast', async (req, res) => {
 
         res.json({ roasting: response.text() });
     } catch (error) {
-        console.log(error);
         // if error is GoogleGenerativeAIResponseError
         if (error instanceof GoogleGenerativeAIResponseError) {
             return res.status(500).json({ error: error.message,type:"AI" });
         }
         if(axios.isAxiosError(error)){
-            return res.status(500).json({ error: error.message,type:"Github" });
+            if(error.response.status == 404){
+                return res.status(404).json({ error: "User not found",type:"Github" });
+            } else if(error.response.status == 403){
+                return res.status(403).json({ error: "Reached github api limit",type:"Github" });
+            } else {
+                return res.status(500).json({ error: error.message,type:"Github" });
+            }
+            
         }
+        console.log(error);
         res.status(500).json({ error: error.message,type:"Server" });
     }
 });
