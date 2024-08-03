@@ -25,7 +25,7 @@ app.post('/roast', async (req, res) => {
     var datas = null;
 
     //cek data dari client
-    if (jsonData == null && jsonData != "") {
+    if (jsonData != null && jsonData != "") {
         try {
             datas = JSON.parse(jsonData);
         } catch (error) {
