@@ -25,17 +25,21 @@ app.post('/roast', async (req, res) => {
     var datas = null;
 
     //cek data dari client
-    if (jsonData == null && jsonData != "") {
+    if (jsonData != null && jsonData != "") {
         try {
             datas = JSON.parse(jsonData);
         } catch (error) {
             datas = null;
             console.log("failed parse json");
         }
+    } else {
+        console.log("No data from client");
     }
 
     try {
         var readmeResponse = { status: 404,data:README };
+        var profileResponse = { status: 403, data: { location: datas.location ?? null } };
+        var useToken = false;
         //onfly fetch data from github if not provided from client
         if (datas == null) {
             // Panggil GitHub API
@@ -45,8 +49,7 @@ app.post('/roast', async (req, res) => {
                     "Authorization": `token ${process.env.GITHUB_TOKEN}`,
                 }
             }
-            var profileResponse = { status: 403 };
-            var useToken = false;
+            
 
             //cek kalau token gak kena limit
             try {
