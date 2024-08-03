@@ -41,9 +41,9 @@ app.post('/roast', async (req, res) => {
         if(README != null && README != ""){
             readmeResponse = { status: 200, data: README };
         }
-        var profileResponse = { status: 403, data: { location: datas.location ?? null } };
+        var profileResponse = { status: 404, data: { location: datas.location ?? null } };
         var useToken = false;
-        //onfly fetch data from github if not provided from client
+        //request ulang data-data github jika data dari klien kosong
         if (datas == null) {
             // Panggil GitHub API
             var headerGithub = {}
@@ -62,7 +62,9 @@ app.post('/roast', async (req, res) => {
                 profileResponse = await axios.get(`https://api.github.com/users/${username}`);
             }
 
-            //kalau kena tokennya juga kena limit kembali ke tanpa token
+            
+
+            //kalau tokennya juga kena limit kembali ke tanpa token
             if (!useToken) {
                 headerGithub = {};
             }
@@ -98,7 +100,9 @@ app.post('/roast', async (req, res) => {
         }
         // Buat prompt untuk Gemini AI
         var prompt = `berikan roasting singkat dengan kejam dan menyindir dalam bahasa gaul untuk profile github berikut : ${username}. Berikut detailnya: "${JSON.stringify(datas)}"`;
-        if (profileResponse.data.location != null && !profileResponse.data.location.includes('Indonesia')) {
+        
+        // pakai bahasa inggris kalau lokasinya bukan di indonesia
+        if (profileResponse.data != null && profileResponse.data.location != null && !profileResponse.data.location.includes('Indonesia')) {
             prompt = `give a short and harsh roasting for the following github profile: ${username}. Here are the details: "${JSON.stringify(datas)}"`;
         }
         if (readmeResponse.status === 200 && readmeResponse.data != null) {
@@ -107,10 +111,16 @@ app.post('/roast', async (req, res) => {
             prompt += `, Profile Markdown: Not Found`;
         }
 
+        //pastikan response selalu konsisten
         if (profileResponse.data.location == null || profileResponse.data.location.includes('Indonesia')) {
             prompt += `. (berikan response dalam bahasa indonesia dan jangan berikan pujian atau saran serta jangan berikan kata-kata terlalu kasar)`
         } else {
             prompt += `. (provide the response in English and do not provide praise or advice and do not use explicit words)`
+        }
+
+        //kalau username gak ketemu
+        if(profileResponse.status == 404){
+            return res.status(404).json({ error: "User not found",type:"Github" });
         }
 
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -119,10 +129,11 @@ app.post('/roast', async (req, res) => {
 
         res.json({ roasting: response.text() });
     } catch (error) {
-        // if error is GoogleGenerativeAIResponseError
+        // kalau error dari google gemini-nya
         if (error instanceof GoogleGenerativeAIResponseError) {
             return res.status(500).json({ error: error.message,type:"AI" });
         }
+        //kalau error dari exios (request ke api github)
         if(axios.isAxiosError(error)){
             if(error.response.status == 404){
                 return res.status(404).json({ error: "User not found",type:"Github" });
@@ -133,6 +144,8 @@ app.post('/roast', async (req, res) => {
             }
             
         }
+
+        //error yang lain
         console.log(error);
         res.status(500).json({ error: error.message,type:"Server" });
     }
