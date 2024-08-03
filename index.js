@@ -24,14 +24,20 @@ app.post('/roast', async (req, res) => {
 
     try {
         // Panggil GitHub API
-        const profileResponse = await axios.get(`https://api.github.com/users/${username}`);
-        const repoResponse = await axios.get(`https://api.github.com/users/${username}/repos`);
+        var headerGithub = {}
+        if(process.env.GITHUB_TOKEN != null) {
+            headerGithub = {
+                "Authorization": `token ${process.env.GITHUB_TOKEN}`,
+            }
+        }
+        const profileResponse = await axios.get(`https://api.github.com/users/${username}`, { headers: headerGithub });
+        const repoResponse = await axios.get(`https://api.github.com/users/${username}/repos`, { headers: headerGithub });
         var readmeResponse = { status: 404 };
         try {
-            readmeResponse = await axios.get(`https://raw.githubusercontent.com/${username}/${username}/main/README.md`);
+            readmeResponse = await axios.get(`https://raw.githubusercontent.com/${username}/${username}/main/README.md`, { headers: headerGithub });
         } catch (error) {
             try {
-                readmeResponse = await axios.get(`https://raw.githubusercontent.com/${username}/${username}/master/README.md`);
+                readmeResponse = await axios.get(`https://raw.githubusercontent.com/${username}/${username}/master/README.md`, { headers: headerGithub });
             } catch (error) {
                 
             }
