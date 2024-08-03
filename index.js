@@ -37,7 +37,10 @@ app.post('/roast', async (req, res) => {
     }
 
     try {
-        var readmeResponse = { status: 404,data:README };
+        var readmeResponse = { status: 404,data:null };
+        if(README != null && README != ""){
+            readmeResponse = { status: 200, data: README };
+        }
         var profileResponse = { status: 403, data: { location: datas.location ?? null } };
         var useToken = false;
         //onfly fetch data from github if not provided from client
@@ -98,7 +101,7 @@ app.post('/roast', async (req, res) => {
         if (profileResponse.data.location != null && !profileResponse.data.location.includes('Indonesia')) {
             prompt = `give a short and harsh roasting for the following github profile: ${username}. Here are the details: "${JSON.stringify(datas)}"`;
         }
-        if (readmeResponse.status === 200) {
+        if (readmeResponse.status === 200 && readmeResponse.data != null) {
             prompt += ", Profile Markdown: ```" + readmeResponse.data + "```";
         } else {
             prompt += `, Profile Markdown: Not Found`;
@@ -119,10 +122,12 @@ app.post('/roast', async (req, res) => {
         console.log(error);
         // if error is GoogleGenerativeAIResponseError
         if (error instanceof GoogleGenerativeAIResponseError) {
-
-            return res.status(500).json({ error: error.message });
+            return res.status(500).json({ error: error.message,type:"AI" });
         }
-        res.status(500).json({ error: error.message });
+        if(axios.isAxiosError(error)){
+            return res.status(500).json({ error: error.message,type:"Github" });
+        }
+        res.status(500).json({ error: error.message,type:"Server" });
     }
 });
 
