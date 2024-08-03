@@ -30,8 +30,18 @@ app.post('/roast', async (req, res) => {
                 "Authorization": `token ${process.env.GITHUB_TOKEN}`,
             }
         }
-        const profileResponse = await axios.get(`https://api.github.com/users/${username}`, { headers: headerGithub });
-        const repoResponse = await axios.get(`https://api.github.com/users/${username}/repos`, { headers: headerGithub });
+        var profileResponse = { status: 403 };
+        var useToken = false;
+        try {
+            profileResponse = await axios.get(`https://api.github.com/users/${username}`, { headers: headerGithub });
+            useToken = true;
+        } catch (error) {
+            profileResponse = await axios.get(`https://api.github.com/users/${username}`);
+        }
+        if(!useToken){
+            headerGithub = {};
+        }
+        const repoResponse = await axios.get(`https://api.github.com/users/${username}/repos?sort=updated`, { headers: headerGithub });
         var readmeResponse = { status: 404 };
         try {
             readmeResponse = await axios.get(`https://raw.githubusercontent.com/${username}/${username}/main/README.md`, { headers: headerGithub });
@@ -58,7 +68,7 @@ app.post('/roast', async (req, res) => {
                 "open_issues_count": repo.open_issues_count,
                 "license": repo.license,
                 "fork": repo.fork,
-            })).reverse().slice(0,50),
+            })).slice(0,50),
         }
         // Buat prompt untuk Gemini AI
         var prompt = `berikan roasting singkat dengan kejam dan menyindir dalam bahasa gaul untuk profile github berikut : ${username}. Berikut detailnya: "${JSON.stringify(datas)}"`;
