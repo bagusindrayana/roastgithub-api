@@ -21,17 +21,21 @@ app.use(bodyParser.json());
 
 app.post('/roast', async (req, res) => {
     const { username } = req.query;
-    const { jsonData } = req.body;
+    const { jsonData,README } = req.body;
     var datas = null;
+
+    //cek data dari client
     if (jsonData == null && jsonData != "") {
         try {
             datas = JSON.parse(jsonData);
         } catch (error) {
             datas = null;
+            console.log("failed parse json");
         }
     }
 
     try {
+        var readmeResponse = { status: 404,data:README };
         //onfly fetch data from github if not provided from client
         if (datas == null) {
             // Panggil GitHub API
@@ -43,24 +47,28 @@ app.post('/roast', async (req, res) => {
             }
             var profileResponse = { status: 403 };
             var useToken = false;
+
+            //cek kalau token gak kena limit
             try {
                 profileResponse = await axios.get(`https://api.github.com/users/${username}`, { headers: headerGithub });
                 useToken = true;
             } catch (error) {
                 profileResponse = await axios.get(`https://api.github.com/users/${username}`);
             }
+
+            //kalau kena tokennya juga kena limit kembali ke tanpa token
             if (!useToken) {
                 headerGithub = {};
             }
             const repoResponse = await axios.get(`https://api.github.com/users/${username}/repos?sort=updated`, { headers: headerGithub });
-            var readmeResponse = { status: 404 };
+           
             try {
                 readmeResponse = await axios.get(`https://raw.githubusercontent.com/${username}/${username}/main/README.md`, { headers: headerGithub });
             } catch (error) {
                 try {
                     readmeResponse = await axios.get(`https://raw.githubusercontent.com/${username}/${username}/master/README.md`, { headers: headerGithub });
                 } catch (error) {
-
+                    console.log("failed get readme");
                 }
             }
             datas = {
