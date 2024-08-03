@@ -3,7 +3,7 @@ const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
 require('dotenv').config()
-const { GoogleGenerativeAI, GoogleGenerativeAIResponseError } = require("@google/generative-ai");
+const { GoogleGenerativeAI, GoogleGenerativeAIResponseError, HarmCategory, HarmBlockThreshold } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const app = express();
@@ -41,7 +41,7 @@ app.post('/roast', async (req, res) => {
         if(README != null && README != ""){
             readmeResponse = { status: 200, data: README };
         }
-        var profileResponse = { status: 404, data: { location: datas.location ?? null } };
+        var profileResponse = { status: 404, data: null };
         var useToken = false;
         //request ulang data-data github jika data dari klien kosong
         if (datas == null) {
@@ -97,7 +97,11 @@ app.post('/roast', async (req, res) => {
                     "fork": repo.fork,
                 })).slice(0, 50),
             }
+        } else {
+            profileResponse = { status: 200, data: datas };
         }
+        
+
         // Buat prompt untuk Gemini AI
         var prompt = `berikan roasting singkat dengan kejam dan menyindir dalam bahasa gaul untuk profile github berikut : ${username}. Berikut detailnya: "${JSON.stringify(datas)}"`;
         
