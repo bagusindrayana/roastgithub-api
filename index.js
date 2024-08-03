@@ -3,7 +3,7 @@ const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
 require('dotenv').config()
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenerativeAI,GoogleGenerativeAIResponseError } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const app = express();
@@ -36,20 +36,38 @@ app.post('/roast', async (req, res) => {
                 
             }
         }
-
+        const datas  = {
+            "name": profileResponse.data.name,
+            "bio": profileResponse.data.bio,
+            "company": profileResponse.data.company,
+            "location": profileResponse.data.location,
+            "followers": profileResponse.data.followers,
+            "following": profileResponse.data.following,
+            "public_repos": profileResponse.data.public_repos,
+            "repositories":repoResponse.data.map(repo => ({
+                "name": repo.name,
+                "description": repo.description,
+                "language": repo.language,
+                "stargazers_count": repo.stargazers_count,
+                "open_issues_count": repo.open_issues_count,
+                "license": repo.license,
+            })).slice(0,50),
+        }
         // Buat prompt untuk Gemini AI
-        var prompt = `berikan roasting singkat dengan kejam dan menyindir dalam bahasa gaul untuk profile github berikut : ${username}. Berikut detailnya: Nama : ${profileResponse.data.name}, Bio :  ${profileResponse.data.bio ?? '-'} Repositories: "${repoResponse.data.map(repo => repo.name).slice(0,50).join(', ')}"`;
+        var prompt = `berikan roasting singkat dengan kejam dan menyindir dalam bahasa gaul untuk profile github berikut : ${username}. Berikut detailnya: "${JSON.stringify(datas)}"`;
         if(profileResponse.data.location != null && !profileResponse.data.location.includes('Indonesia')) {
-            prompt = `give a short and harsh roasting in Indonesian slang for the following github profile: ${username}. Here are the details: Name : ${profileResponse.data.name}, Bio :  ${profileResponse.data.bio ?? '-'} Repositories: "${repoResponse.data.map(repo => repo.name).slice(0,50).join(', ')}"`;
+            prompt = `give a short and harsh roasting for the following github profile: ${username}. Here are the details: "${JSON.stringify(datas)}"`;
         }
         if(readmeResponse.status === 200) {
-            prompt += `, Profile README: ${readmeResponse.data}`;
+            prompt += ", Profile Markdown: ```"+readmeResponse.data+"```";
         } else {
-            prompt += `, Profile README: Not Found`;
+            prompt += `, Profile Markdown: Not Found`;
         }
 
         if(profileResponse.data.location == null || profileResponse.data.location.includes('Indonesia')){
-            prompt += `. (berikan response dalam bahasa indonesia dan jangan berikan pujian atau saran serta jangan berikan kata-kata kasar)`
+            prompt += `. (berikan response dalam bahasa indonesia dan jangan berikan pujian atau saran serta jangan berikan kata-kata terlalu kasar)`
+        } else {
+            prompt += `. (provide the response in English and do not provide praise or advice and do not use explicit words)`
         }
 
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
@@ -58,7 +76,12 @@ app.post('/roast', async (req, res) => {
 
         res.json({ roasting:response.text() });
     } catch (error) {
-        console.error(error);
+       
+        // if error is GoogleGenerativeAIResponseError
+        if (error instanceof GoogleGenerativeAIResponseError) {
+           
+            return res.status(500).json({ error: error.response.text() });
+        }
         res.status(500).json({ error: 'Something went wrong' });
     }
 });
