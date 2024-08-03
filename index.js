@@ -57,7 +57,8 @@ app.post('/roast', async (req, res) => {
                 "stargazers_count": repo.stargazers_count,
                 "open_issues_count": repo.open_issues_count,
                 "license": repo.license,
-            })).slice(0,50),
+                "fork": repo.fork,
+            })).reverse().slice(0,50),
         }
         // Buat prompt untuk Gemini AI
         var prompt = `berikan roasting singkat dengan kejam dan menyindir dalam bahasa gaul untuk profile github berikut : ${username}. Berikut detailnya: "${JSON.stringify(datas)}"`;
