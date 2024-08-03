@@ -76,7 +76,7 @@ app.post('/roast', async (req, res) => {
       
         res.json({ roasting:response.text() });
     } catch (error) {
-       
+        console.log(error);
         // if error is GoogleGenerativeAIResponseError
         if (error instanceof GoogleGenerativeAIResponseError) {
            
