@@ -122,8 +122,18 @@ app.post('/roast', async (req, res) => {
         if(profileResponse.status == 404){
             return res.status(404).json({ error: "User not found",type:"Github" });
         }
-
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const safetySettings = [
+            {
+              category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+              threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+            {
+              category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+              threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+          ];
+          
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" ,safetySettings});
         const result = await model.generateContent(prompt);
         const response = await result.response;
 
