@@ -24,7 +24,11 @@ app.post('/roast', async (req, res) => {
     const { jsonData } = req.body;
     var datas = null;
     if (jsonData == null && jsonData != "") {
-        datas = JSON.parse(jsonData);
+        try {
+            datas = JSON.parse(jsonData);
+        } catch (error) {
+            datas = null;
+        }
     }
 
     try {
