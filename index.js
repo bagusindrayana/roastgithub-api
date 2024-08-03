@@ -99,7 +99,7 @@ app.post('/roast', async (req, res) => {
            
             return res.status(500).json({ error: error.message });
         }
-        res.status(500).json({ error: 'Something went wrong' });
+        res.status(500).json({ error: error.message });
     }
 });
 
