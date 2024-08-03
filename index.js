@@ -73,14 +73,14 @@ app.post('/roast', async (req, res) => {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
         const result = await model.generateContent(prompt);
         const response = await result.response;
-
+      
         res.json({ roasting:response.text() });
     } catch (error) {
        
         // if error is GoogleGenerativeAIResponseError
         if (error instanceof GoogleGenerativeAIResponseError) {
            
-            return res.status(500).json({ error: error.response.text() });
+            return res.status(500).json({ error: error.message });
         }
         res.status(500).json({ error: 'Something went wrong' });
     }
