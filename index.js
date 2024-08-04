@@ -2,11 +2,15 @@ const cors = require('cors');
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config()
 const { GoogleGenerativeAI, GoogleGenerativeAIResponseError, HarmCategory, HarmBlockThreshold, GoogleGenerativeAIError } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+
+
 const app = express();
+
 const options = [
     cors({
         origin: '*',
@@ -15,8 +19,18 @@ const options = [
         credentials: true,
     })
 ];
-
 app.use(options);
+
+const limiter = rateLimit({
+	windowMs: 60 * 1000, // 1 minutes
+	limit: 100, // Limit each IP to 100 requests per `window`.
+	standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
+	legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
+	// store: ... , // Redis, Memcached, etc. See below.
+})
+
+app.use(limiter);
+
 app.use(bodyParser.json());
 
 app.post('/roast', async (req, res) => {
