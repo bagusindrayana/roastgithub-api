@@ -80,13 +80,11 @@ app.post('/roasting', async (req, res) => {
     }
     const { username } = req.query;
     const { jsonData, README, model, language, apiKey } = req.body;
-    if(apiKey != undefined && apiKey != ""){
+    if(apiKey != undefined && apiKey != "" && apiKey != null){
         genAI = new GoogleGenerativeAI(apiKey);
-
         groq = new Groq({
             apiKey: apiKey, // This is the default and can be omitted
         });
-
     }
     var datas = null;
 
@@ -201,6 +199,7 @@ app.post('/roasting', async (req, res) => {
 
         res.json({ roasting: result });
     } catch (error) {
+        console.log(error);
         // kalau error dari google gemini-nya
         if (error instanceof GoogleGenerativeAIResponseError || error instanceof GoogleGenerativeAIError) {
             return res.status(500).json({ error: error.message, type: "AI" });
@@ -218,7 +217,6 @@ app.post('/roasting', async (req, res) => {
         }
 
         //error yang lain
-        console.log(error);
         res.status(500).json({ error: error.message, type: "Server" });
     }
 });
