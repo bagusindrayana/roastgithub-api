@@ -18,7 +18,7 @@ async function generateContent (model,prompt)  {
     if(model == "llama"){
         const chatCompletion = await groq.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
-            model: 'llama-3.1-70b-versatile',
+            model: 'llama3-70b-8192',
           });
         return chatCompletion.choices[0].message.content;
     } else {
