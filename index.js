@@ -5,9 +5,40 @@ const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config()
 const { GoogleGenerativeAI, GoogleGenerativeAIResponseError, HarmCategory, HarmBlockThreshold, GoogleGenerativeAIError } = require("@google/generative-ai");
+const {Groq} = require('groq-sdk');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+const groq = new Groq({
+    apiKey: process.env.GROQ_API_KEY, // This is the default and can be omitted
+});
 
+
+
+async function generateContent (model,prompt)  {
+    if(model == "llama"){
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: 'llama-3.1-70b-versatile',
+          });
+        return chatCompletion.choices[0].message.content;
+    } else {
+        const safetySettings = [
+            {
+                category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+        ];
+
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
+    }
+}
 
 const app = express();
 
@@ -22,11 +53,11 @@ const options = [
 app.use(options);
 
 const limiter = rateLimit({
-	windowMs: 60 * 1000, // 1 minutes
-	limit: 100, // Limit each IP to 100 requests per `window`.
-	standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
-	legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
-	// store: ... , // Redis, Memcached, etc. See below.
+    windowMs: 60 * 1000, // 1 minutes
+    limit: 100, // Limit each IP to 100 requests per `window`.
+    standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
+    // store: ... , // Redis, Memcached, etc. See below.
 })
 
 app.use(limiter);
@@ -35,7 +66,7 @@ app.use(bodyParser.json());
 
 app.post('/roast', async (req, res) => {
     const { username } = req.query;
-    const { jsonData,README } = req.body;
+    const { jsonData, README, model, language } = req.body;
     var datas = null;
 
     //cek data dari client
@@ -51,8 +82,8 @@ app.post('/roast', async (req, res) => {
     }
 
     try {
-        var readmeResponse = { status: 404,data:null };
-        if(README != null && README != ""){
+        var readmeResponse = { status: 404, data: null };
+        if (README != null && README != "") {
             readmeResponse = { status: 200, data: README };
         }
         var profileResponse = { status: 404, data: null };
@@ -66,7 +97,7 @@ app.post('/roast', async (req, res) => {
                     "Authorization": `token ${process.env.GITHUB_TOKEN}`,
                 }
             }
-            
+
 
             //cek kalau token gak kena limit
             try {
@@ -76,14 +107,14 @@ app.post('/roast', async (req, res) => {
                 profileResponse = await axios.get(`https://api.github.com/users/${username}`);
             }
 
-            
+
 
             //kalau tokennya juga kena limit kembali ke tanpa token
             if (!useToken) {
                 headerGithub = {};
             }
             const repoResponse = await axios.get(`https://api.github.com/users/${username}/repos?sort=updated`, { headers: headerGithub });
-           
+
             try {
                 readmeResponse = await axios.get(`https://raw.githubusercontent.com/${username}/${username}/main/README.md`, { headers: headerGithub });
             } catch (error) {
@@ -118,13 +149,13 @@ app.post('/roast', async (req, res) => {
         } else {
             profileResponse = { status: 200, data: datas };
         }
-        
+
 
         // Buat prompt untuk Gemini AI
         var prompt = `berikan roasting singkat dengan kejam,menyindir, serta menyakitkan dalam bahasa gaul untuk profile github berikut : ${username}. Berikut detailnya: "${JSON.stringify(datas)}"`;
-        
+
         // pakai bahasa inggris kalau lokasinya bukan di indonesia
-        if (profileResponse.data != null && profileResponse.data.location != null && !profileResponse.data.location.includes('Indonesia')) {
+        if ((profileResponse.data != null && profileResponse.data.location != null && !profileResponse.data.location.includes('Indonesia') && language == "auto") || language == "english") {
             prompt = `give a short and harsh roasting for the following github profile: ${username}. Here are the details: "${JSON.stringify(datas)}"`;
         }
         if (readmeResponse.status === 200 && readmeResponse.data != null) {
@@ -134,52 +165,40 @@ app.post('/roast', async (req, res) => {
         }
 
         //pastikan response selalu konsisten
-        if (profileResponse.data.location == null || profileResponse.data.location.includes('Indonesia')) {
-            prompt += `. (berikan response dalam bahasa indonesia dan jangan berikan pujian atau saran)`
+        if ((profileResponse.data != null && profileResponse.data.location != null && !profileResponse.data.location.includes('Indonesia') && language == "auto") || language == "english") {
+            prompt += `. (provide the response in English and do not provide praise or advice)`;
         } else {
-            prompt += `. (provide the response in English and do not provide praise or advice)`
+            prompt += `. (berikan response dalam bahasa indonesia dan jangan berikan pujian atau saran)`;
         }
 
         //kalau username gak ketemu
-        if(profileResponse.status == 404){
-            return res.status(404).json({ error: "User not found",type:"Github" });
+        if (profileResponse.status == 404) {
+            return res.status(404).json({ error: "User not found", type: "Github" });
         }
-        const safetySettings = [
-            {
-              category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-              threshold: HarmBlockThreshold.BLOCK_NONE,
-            },
-            {
-              category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-              threshold: HarmBlockThreshold.BLOCK_NONE,
-            },
-          ];
-          
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" ,safetySettings});
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
+        
+        const result = await generateContent(model ?? "gemini",prompt);
 
-        res.json({ roasting: response.text() });
+        res.json({ roasting: result });
     } catch (error) {
         // kalau error dari google gemini-nya
         if (error instanceof GoogleGenerativeAIResponseError || error instanceof GoogleGenerativeAIError) {
-            return res.status(500).json({ error: error.message,type:"AI" });
+            return res.status(500).json({ error: error.message, type: "AI" });
         }
         //kalau error dari exios (request ke api github)
-        if(axios.isAxiosError(error)){
-            if(error.response.status == 404){
-                return res.status(404).json({ error: "User not found",type:"Github" });
-            } else if(error.response.status == 403){
-                return res.status(403).json({ error: "Reached github api limit",type:"Github" });
+        if (axios.isAxiosError(error)) {
+            if (error.response.status == 404) {
+                return res.status(404).json({ error: "User not found", type: "Github" });
+            } else if (error.response.status == 403) {
+                return res.status(403).json({ error: "Reached github api limit", type: "Github" });
             } else {
-                return res.status(500).json({ error: error.message,type:"Github" });
+                return res.status(500).json({ error: error.message, type: "Github" });
             }
-            
+
         }
 
         //error yang lain
         console.log(error);
-        res.status(500).json({ error: error.message,type:"Server" });
+        res.status(500).json({ error: error.message, type: "Server" });
     }
 });
 
