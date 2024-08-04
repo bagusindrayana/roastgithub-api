@@ -42,12 +42,24 @@ async function generateContent (model,prompt)  {
 
 const app = express();
 
-const options = [
-    cors({
-        origin: ["roastgithub.netlify.app","roastgithub.vercel.app","https://roastgithub.netlify.app","https://roastgithub.vercel.app"],
-    })
-];
-app.use(options);
+// const options = [
+//     cors({
+//         origin: ["roastgithub.netlify.app","roastgithub.vercel.app","https://roastgithub.netlify.app","https://roastgithub.vercel.app"],
+//     })
+// ];
+
+var allowlist = ["roastgithub.netlify.app","roastgithub.vercel.app","https://roastgithub.netlify.app","https://roastgithub.vercel.app","http://roastgithub.netlify.app","http://roastgithub.vercel.app"]
+var corsOptionsDelegate = function (req, callback) {
+  var corsOptions;
+  console.log(req.header('Origin'));
+  if (allowlist.indexOf(req.header('Origin')) !== -1) {
+    corsOptions = { origin: true }
+  } else {
+    corsOptions = { origin: false }
+  }
+  callback(null, corsOptions)
+}
+app.use(cors(corsOptionsDelegate));
 
 const limiter = rateLimit({
     windowMs: 60 * 1000, // 1 minutes
