@@ -44,7 +44,7 @@ const app = express();
 
 const options = [
     cors({
-        origin: ["roastgithub.netlify.app","roastgithub.vercel.app","https://roastgithub.netlify.app","https://roastgithub.vercel.app","https://roastgithub.vercel.app/roast","https://roastgithub.netlify.app/roast"],
+        origin: ["roastgithub.netlify.app","roastgithub.vercel.app","https://roastgithub.netlify.app","https://roastgithub.vercel.app"],
         methods: '*',
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
