@@ -63,7 +63,7 @@ app.use(cors(corsOptionsDelegate));
 
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // minutes
-    limit: 10, // Limit each IP per `window`.
+    limit: 30, // Limit each IP per `window`.
     standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
     // store: ... , // Redis, Memcached, etc. See below.
