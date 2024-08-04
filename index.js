@@ -10,11 +10,11 @@ const { Groq } = require('groq-sdk');
 
 
 
-async function generateContent(model, prompt, genAI) {
+async function generateContent(model, prompt, aiService) {
     if (model == "llama") {
-        const chatCompletion = await genAI.chat.completions.create({
+        const chatCompletion = await aiService.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
-            model: 'llama3-70b-8192',
+            model: 'llama-3.1-70b-versatile',
         });
         return chatCompletion.choices[0].message.content;
     } else {
@@ -29,7 +29,7 @@ async function generateContent(model, prompt, genAI) {
             },
         ];
 
-        const modelAi = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
+        const modelAi = aiService.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
         const result = await modelAi.generateContent(prompt);
         const response = await result.response;
         return response.text();
@@ -38,24 +38,25 @@ async function generateContent(model, prompt, genAI) {
 
 const app = express();
 
-// const options = [
-//     cors({
-//         origin: ["roastgithub.netlify.app","roastgithub.vercel.app","https://roastgithub.netlify.app","https://roastgithub.vercel.app"],
-//     })
-// ];
+const options = [
+    cors({
+        origin: "*",
+    })
+];
+app.use(options);
 
-var allowlist = ["roastgithub.netlify.app", "roastgithub.vercel.app", "https://roastgithub.netlify.app", "https://roastgithub.vercel.app", "http://roastgithub.netlify.app", "http://roastgithub.vercel.app"]
-var corsOptionsDelegate = function (req, callback) {
-    var corsOptions;
+// var allowlist = ["roastgithub.netlify.app", "roastgithub.vercel.app", "https://roastgithub.netlify.app", "https://roastgithub.vercel.app", "http://roastgithub.netlify.app", "http://roastgithub.vercel.app"]
+// var corsOptionsDelegate = function (req, callback) {
+//     var corsOptions;
 
-    if (allowlist.indexOf(req.header('Origin')) !== -1) {
-        corsOptions = { origin: true }
-    } else {
-        corsOptions = { origin: false };
-    }
-    callback(null, corsOptions)
-}
-app.use(cors(corsOptionsDelegate));
+//     if (allowlist.indexOf(req.header('Origin')) !== -1) {
+//         corsOptions = { origin: true }
+//     } else {
+//         corsOptions = { origin: false };
+//     }
+//     callback(null, corsOptions)
+// }
+// app.use(cors(corsOptionsDelegate));
 
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // minutes
