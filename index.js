@@ -200,7 +200,7 @@ app.post('/roasting', async (req, res) => {
             return res.status(404).json({ error: "User not found", type: "Github" });
         }
 
-        if (model == "groq") {
+        if (model == "llama") {
             const result = await generateContent(model, prompt, groq);
 
             res.json({ roasting: result });
