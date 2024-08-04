@@ -3,7 +3,7 @@ const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
 require('dotenv').config()
-const { GoogleGenerativeAI, GoogleGenerativeAIResponseError, HarmCategory, HarmBlockThreshold } = require("@google/generative-ai");
+const { GoogleGenerativeAI, GoogleGenerativeAIResponseError, HarmCategory, HarmBlockThreshold, GoogleGenerativeAIError } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const app = express();
@@ -148,7 +148,7 @@ app.post('/roast', async (req, res) => {
         res.json({ roasting: response.text() });
     } catch (error) {
         // kalau error dari google gemini-nya
-        if (error instanceof GoogleGenerativeAIResponseError) {
+        if (error instanceof GoogleGenerativeAIResponseError || error instanceof GoogleGenerativeAIError) {
             return res.status(500).json({ error: error.message,type:"AI" });
         }
         //kalau error dari exios (request ke api github)
