@@ -41,7 +41,15 @@ async function generateContent (model,prompt)  {
 }
 
 const app = express();
-
+const options = [
+    cors({
+        origin: '*',
+        methods: '*',
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true,
+    })
+];
+app.use(options);
 
 const limiter = rateLimit({
     windowMs: 2 * 60 * 1000, // 15 minutes
