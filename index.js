@@ -6,11 +6,7 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config()
 const { GoogleGenerativeAI, GoogleGenerativeAIResponseError, HarmCategory, HarmBlockThreshold, GoogleGenerativeAIError } = require("@google/generative-ai");
 const {Groq} = require('groq-sdk');
-let genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-let groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY, // This is the default and can be omitted
-});
 
 
 
@@ -80,6 +76,11 @@ app.post('/roasting', async (req, res) => {
     }
     const { username } = req.query;
     const { jsonData, README, model, language, apiKey } = req.body;
+    let genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+    let groq = new Groq({
+        apiKey: process.env.GROQ_API_KEY, // This is the default and can be omitted
+    });
     if(apiKey != undefined && apiKey != "" && apiKey != null){
         genAI = new GoogleGenerativeAI(apiKey);
         groq = new Groq({
