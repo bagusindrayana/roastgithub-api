@@ -10,9 +10,9 @@ const { Groq } = require('groq-sdk');
 
 
 
-async function generateContent(model, prompt) {
+async function generateContent(model, prompt, genAI) {
     if (model == "llama") {
-        const chatCompletion = await groq.chat.completions.create({
+        const chatCompletion = await genAI.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
             model: 'llama3-70b-8192',
         });
@@ -29,8 +29,8 @@ async function generateContent(model, prompt) {
             },
         ];
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
-        const result = await model.generateContent(prompt);
+        const modelAi = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
+        const result = await modelAi.generateContent(prompt);
         const response = await result.response;
         return response.text();
     }
@@ -200,9 +200,15 @@ app.post('/roasting', async (req, res) => {
             return res.status(404).json({ error: "User not found", type: "Github" });
         }
 
-        const result = await generateContent(model ?? "gemini", prompt);
+        if (model == "groq") {
+            const result = await generateContent(model, prompt, groq);
 
-        res.json({ roasting: result });
+            res.json({ roasting: result });
+        } else {
+            const result = await generateContent(model ?? "gemini", prompt, genAI);
+
+            res.json({ roasting: result });
+        }
     } catch (error) {
         console.log(error);
         // kalau error dari google gemini-nya
