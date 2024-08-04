@@ -38,25 +38,25 @@ async function generateContent(model, prompt, aiService) {
 
 const app = express();
 
-const options = [
-    cors({
-        origin: "*",
-    })
-];
-app.use(options);
+// const options = [
+//     cors({
+//         origin: "*",
+//     })
+// ];
+// app.use(options);
 
-// var allowlist = ["roastgithub.netlify.app", "roastgithub.vercel.app", "https://roastgithub.netlify.app", "https://roastgithub.vercel.app", "http://roastgithub.netlify.app", "http://roastgithub.vercel.app"]
-// var corsOptionsDelegate = function (req, callback) {
-//     var corsOptions;
+var allowlist = ["roastgithub.netlify.app", "roastgithub.vercel.app", "https://roastgithub.netlify.app", "https://roastgithub.vercel.app", "http://roastgithub.netlify.app", "http://roastgithub.vercel.app"]
+var corsOptionsDelegate = function (req, callback) {
+    var corsOptions;
 
-//     if (allowlist.indexOf(req.header('Origin')) !== -1) {
-//         corsOptions = { origin: true }
-//     } else {
-//         corsOptions = { origin: false };
-//     }
-//     callback(null, corsOptions)
-// }
-// app.use(cors(corsOptionsDelegate));
+    if (allowlist.indexOf(req.header('Origin')) !== -1) {
+        corsOptions = { origin: true }
+    } else {
+        corsOptions = { origin: false };
+    }
+    callback(null, corsOptions)
+}
+app.use(cors(corsOptionsDelegate));
 
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // minutes
