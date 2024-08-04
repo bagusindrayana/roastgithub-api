@@ -51,11 +51,12 @@ const app = express();
 var allowlist = ["roastgithub.netlify.app","roastgithub.vercel.app","https://roastgithub.netlify.app","https://roastgithub.vercel.app","http://roastgithub.netlify.app","http://roastgithub.vercel.app"]
 var corsOptionsDelegate = function (req, callback) {
   var corsOptions;
-  console.log(req.header('Origin'));
+ 
   if (allowlist.indexOf(req.header('Origin')) !== -1) {
     corsOptions = { origin: true }
   } else {
     corsOptions = { origin: false }
+    console.log(`Not Found : ${req.header('Origin')}`);
   }
   callback(null, corsOptions)
 }
