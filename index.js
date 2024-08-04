@@ -63,8 +63,8 @@ var corsOptionsDelegate = function (req, callback) {
 app.use(cors(corsOptionsDelegate));
 
 const limiter = rateLimit({
-    windowMs: 2 * 60 * 1000, // 15 minutes
-    limit: 100, // Limit each IP to 100 requests per `window`.
+    windowMs: 1 * 60 * 1000, // 15 minutes
+    limit: 30, // Limit each IP to 100 requests per `window`.
     standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
     // store: ... , // Redis, Memcached, etc. See below.
@@ -74,7 +74,11 @@ app.use(limiter);
 
 app.use(bodyParser.json());
 
-app.post('/roast', async (req, res) => {
+app.post('/roasting', async (req, res) => {
+    //if user agent contains curl, golang, or python, return 403
+    if (req.headers['user-agent'] != null && (req.headers['user-agent'].includes("curl") || req.headers['user-agent'].includes("python") || req.headers['user-agent'].includes("Go-http-client"))) {
+        return res.status(403).json({ error: "Forbidden" });
+    }
     const { username } = req.query;
     const { jsonData, README, model, language, apiKey } = req.body;
     if(apiKey != undefined && apiKey != ""){
