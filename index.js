@@ -5,21 +5,17 @@ const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config()
 const { GoogleGenerativeAI, GoogleGenerativeAIResponseError, HarmCategory, HarmBlockThreshold, GoogleGenerativeAIError } = require("@google/generative-ai");
-const {Groq} = require('groq-sdk');
-let genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-let groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY, // This is the default and can be omitted
-});
+const { Groq } = require('groq-sdk');
 
 
 
-async function generateContent (model,prompt)  {
-    if(model == "llama"){
-        const chatCompletion = await groq.chat.completions.create({
+
+async function generateContent(model, prompt, aiService) {
+    if (model == "llama") {
+        const chatCompletion = await aiService.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
-            model: 'llama3-70b-8192',
-          });
+            model: 'llama-3.1-70b-versatile',
+        });
         return chatCompletion.choices[0].message.content;
     } else {
         const safetySettings = [
@@ -33,27 +29,38 @@ async function generateContent (model,prompt)  {
             },
         ];
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
-        const result = await model.generateContent(prompt);
+        const modelAi = aiService.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
+        const result = await modelAi.generateContent(prompt);
         const response = await result.response;
         return response.text();
     }
 }
 
 const app = express();
+
 const options = [
     cors({
-        origin: '*',
-        methods: '*',
-        allowedHeaders: ['Content-Type', 'Authorization'],
-        credentials: true,
+        origin: "*",
     })
 ];
 app.use(options);
 
+// var allowlist = ["roastgithub.netlify.app", "roastgithub.vercel.app", "https://roastgithub.netlify.app", "https://roastgithub.vercel.app", "http://roastgithub.netlify.app", "http://roastgithub.vercel.app"]
+// var corsOptionsDelegate = function (req, callback) {
+//     var corsOptions;
+
+//     if (allowlist.indexOf(req.header('Origin')) !== -1) {
+//         corsOptions = { origin: true }
+//     } else {
+//         corsOptions = { origin: false };
+//     }
+//     callback(null, corsOptions)
+// }
+// app.use(cors(corsOptionsDelegate));
+
 const limiter = rateLimit({
-    windowMs: 2 * 60 * 1000, // 15 minutes
-    limit: 100, // Limit each IP to 100 requests per `window`.
+    windowMs: 1 * 60 * 1000, // minutes
+    limit: 30, // Limit each IP per `window`.
     standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
     // store: ... , // Redis, Memcached, etc. See below.
@@ -63,15 +70,30 @@ app.use(limiter);
 
 app.use(bodyParser.json());
 
-app.post('/roast', async (req, res) => {
+app.post('/roasting', async (req, res) => {
+    //if user agent contains curl, golang, or python, return 403
+    if (req.headers['user-agent'] != null && (req.headers['user-agent'].includes("curl") || req.headers['user-agent'].includes("python") || req.headers['user-agent'].includes("Go-http-client"))) {
+        return res.status(403).json({ error: "Forbidden" });
+    }
     const { username } = req.query;
     const { jsonData, README, model, language, apiKey } = req.body;
-    if(apiKey != undefined && apiKey != ""){
-        genAI = new GoogleGenerativeAI(apiKey);
 
-        groq = new Groq({
-            apiKey: apiKey, // This is the default and can be omitted
-        });
+    if(model == null || model == "" || model == undefined || username == null || username == "" || username == undefined || language == null || language == "" || language == undefined){
+        return res.status(400).json({ error: "Request not compleate" });
+    }
+
+    let genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    let groq = new Groq({
+        apiKey: process.env.GROQ_API_KEY, // This is the default and can be omitted
+    });
+    if (apiKey != undefined && apiKey != "" && apiKey != null) {
+        if (model == "gemini") {
+            genAI = new GoogleGenerativeAI(apiKey);
+        } else {
+            groq = new Groq({
+                apiKey: apiKey, // This is the default and can be omitted
+            });
+        }
 
     }
     var datas = null;
@@ -182,11 +204,18 @@ app.post('/roast', async (req, res) => {
         if (profileResponse.status == 404) {
             return res.status(404).json({ error: "User not found", type: "Github" });
         }
-        
-        const result = await generateContent(model ?? "gemini",prompt);
 
-        res.json({ roasting: result });
+        if (model == "llama") {
+            const result = await generateContent(model, prompt, groq);
+
+            res.json({ roasting: result });
+        } else {
+            const result = await generateContent(model ?? "gemini", prompt, genAI);
+
+            res.json({ roasting: result });
+        }
     } catch (error) {
+        console.log(error);
         // kalau error dari google gemini-nya
         if (error instanceof GoogleGenerativeAIResponseError || error instanceof GoogleGenerativeAIError) {
             return res.status(500).json({ error: error.message, type: "AI" });
@@ -204,7 +233,6 @@ app.post('/roast', async (req, res) => {
         }
 
         //error yang lain
-        console.log(error);
         res.status(500).json({ error: error.message, type: "Server" });
     }
 });
