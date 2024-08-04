@@ -67,7 +67,7 @@ app.post('/roast', async (req, res) => {
     const { username } = req.query;
     const { jsonData, README, model, language, apiKey } = req.body;
     if(apiKey != undefined && apiKey != ""){
-        genAI = new GoogleGenerativeAI(apiKeyY);
+        genAI = new GoogleGenerativeAI(apiKey);
 
         groq = new Groq({
             apiKey: apiKey, // This is the default and can be omitted
