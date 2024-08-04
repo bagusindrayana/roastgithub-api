@@ -55,8 +55,7 @@ var corsOptionsDelegate = function (req, callback) {
   if (allowlist.indexOf(req.header('Origin')) !== -1) {
     corsOptions = { origin: true }
   } else {
-    corsOptions = { origin: false }
-    console.log(`Not Found : ${req.header('Origin')}`);
+    corsOptions = { origin: false };
   }
   callback(null, corsOptions)
 }
