@@ -76,8 +76,12 @@ app.post('/roasting', async (req, res) => {
     }
     const { username } = req.query;
     const { jsonData, README, model, language, apiKey } = req.body;
-    let genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+    if(model == null || model == "" || model == undefined || username == null || username == "" || username == undefined || language == null || language == "" || language == undefined){
+        return res.status(400).json({ error: "Request not compleate" });
+    }
+
+    let genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     let groq = new Groq({
         apiKey: process.env.GROQ_API_KEY, // This is the default and can be omitted
     });
