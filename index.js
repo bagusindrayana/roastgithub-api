@@ -5,17 +5,17 @@ const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config()
 const { GoogleGenerativeAI, GoogleGenerativeAIResponseError, HarmCategory, HarmBlockThreshold, GoogleGenerativeAIError } = require("@google/generative-ai");
-const {Groq} = require('groq-sdk');
+const { Groq } = require('groq-sdk');
 
 
 
 
-async function generateContent (model,prompt)  {
-    if(model == "llama"){
+async function generateContent(model, prompt) {
+    if (model == "llama") {
         const chatCompletion = await groq.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
             model: 'llama3-70b-8192',
-          });
+        });
         return chatCompletion.choices[0].message.content;
     } else {
         const safetySettings = [
@@ -44,16 +44,16 @@ const app = express();
 //     })
 // ];
 
-var allowlist = ["roastgithub.netlify.app","roastgithub.vercel.app","https://roastgithub.netlify.app","https://roastgithub.vercel.app","http://roastgithub.netlify.app","http://roastgithub.vercel.app"]
+var allowlist = ["roastgithub.netlify.app", "roastgithub.vercel.app", "https://roastgithub.netlify.app", "https://roastgithub.vercel.app", "http://roastgithub.netlify.app", "http://roastgithub.vercel.app"]
 var corsOptionsDelegate = function (req, callback) {
-  var corsOptions;
- 
-  if (allowlist.indexOf(req.header('Origin')) !== -1) {
-    corsOptions = { origin: true }
-  } else {
-    corsOptions = { origin: false };
-  }
-  callback(null, corsOptions)
+    var corsOptions;
+
+    if (allowlist.indexOf(req.header('Origin')) !== -1) {
+        corsOptions = { origin: true }
+    } else {
+        corsOptions = { origin: false };
+    }
+    callback(null, corsOptions)
 }
 app.use(cors(corsOptionsDelegate));
 
@@ -81,11 +81,15 @@ app.post('/roasting', async (req, res) => {
     let groq = new Groq({
         apiKey: process.env.GROQ_API_KEY, // This is the default and can be omitted
     });
-    if(apiKey != undefined && apiKey != "" && apiKey != null){
-        genAI = new GoogleGenerativeAI(apiKey);
-        groq = new Groq({
-            apiKey: apiKey, // This is the default and can be omitted
-        });
+    if (apiKey != undefined && apiKey != "" && apiKey != null) {
+        if (model == "gemini") {
+            genAI = new GoogleGenerativeAI(apiKey);
+        } else {
+            groq = new Groq({
+                apiKey: apiKey, // This is the default and can be omitted
+            });
+        }
+
     }
     var datas = null;
 
@@ -195,8 +199,8 @@ app.post('/roasting', async (req, res) => {
         if (profileResponse.status == 404) {
             return res.status(404).json({ error: "User not found", type: "Github" });
         }
-        
-        const result = await generateContent(model ?? "gemini",prompt);
+
+        const result = await generateContent(model ?? "gemini", prompt);
 
         res.json({ roasting: result });
     } catch (error) {
