@@ -9,7 +9,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const app = express();
 const options = [
     cors({
-        origin: '*',
+        origin: ["roastgithub.netlify.app","roastgithub.vercel.app"],
         methods: '*',
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
