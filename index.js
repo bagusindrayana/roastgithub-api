@@ -38,25 +38,30 @@ async function generateContent(model, prompt, aiService) {
 
 const app = express();
 
-const options = [
-    cors({
-        origin: "*",
-    })
-];
-app.use(options);
+if (process.env.CORS == "true") {
+    var allowlist = ["roastgithub.netlify.app", "roastgithub.vercel.app", "https://roastgithub.netlify.app", "https://roastgithub.vercel.app", "http://roastgithub.netlify.app", "http://roastgithub.vercel.app"]
+    var corsOptionsDelegate = function (req, callback) {
+        var corsOptions;
 
-// var allowlist = ["roastgithub.netlify.app", "roastgithub.vercel.app", "https://roastgithub.netlify.app", "https://roastgithub.vercel.app", "http://roastgithub.netlify.app", "http://roastgithub.vercel.app"]
-// var corsOptionsDelegate = function (req, callback) {
-//     var corsOptions;
+        if (allowlist.indexOf(req.header('Origin')) !== -1) {
+            corsOptions = { origin: true }
+        } else {
+            corsOptions = { origin: false };
+        }
+        callback(null, corsOptions)
+    }
+    app.use(cors(corsOptionsDelegate));
+} else {
+    const options = [
+        cors({
+            origin: "*",
+        })
+    ];
+    app.use(options);
+}
 
-//     if (allowlist.indexOf(req.header('Origin')) !== -1) {
-//         corsOptions = { origin: true }
-//     } else {
-//         corsOptions = { origin: false };
-//     }
-//     callback(null, corsOptions)
-// }
-// app.use(cors(corsOptionsDelegate));
+
+
 
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // minutes
@@ -78,11 +83,16 @@ app.post('/roasting', async (req, res) => {
     const { username } = req.query;
     const { jsonData, README, model, language, apiKey } = req.body;
 
-    if(model == null || model == "" || model == undefined || username == null || username == "" || username == undefined || language == null || language == "" || language == undefined){
+    if (model == null || model == "" || model == undefined || username == null || username == "" || username == undefined || language == null || language == "" || language == undefined) {
         return res.status(400).json({ error: "Request not compleate" });
     }
 
-    let genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    // if have multiple api key
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    //split coma and get one random key
+    const geminiApiKeys = geminiApiKey.split(",");
+    const randomGeminiApiKey = geminiApiKeys[Math.floor(Math.random() * geminiApiKeys.length)];
+    let genAI = new GoogleGenerativeAI(randomGeminiApiKey);
     let groq = new Groq({
         apiKey: process.env.GROQ_API_KEY, // This is the default and can be omitted
     });
